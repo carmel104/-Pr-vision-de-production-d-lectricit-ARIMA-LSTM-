@@ -55,10 +55,10 @@ ARIMA s'est révélé extrêmement efficace pour capturer la structure saisonni�
 LSTM a montré une grande flexibilité, bien qu'il puisse être encore amélioré par l'ajustement plus fin des hyperparamètres (learning rate, nombre d'unités).
 
 👥 Auteurs
-AWANDE Carmel
+* AWANDE Carmel
 
-AYONOU Antoine
+* AYONOU Antoine
 
-GANDJI Edmond
+* GANDJI Edmond
 ---
 
