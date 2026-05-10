@@ -1,0 +1,266 @@
+---
+output: 
+  pdf_document:
+    number_sections: yes
+    keep_tex: yes
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+\newpage
+
+\thispagestyle{empty}
+
+\vspace{2cm}
+\begin{center}
+\LARGE \textbf{Chaire Internationale de Physique Mathématique et Applications}\\
+\LARGE CIPMA - Chaire UNESCO
+\end{center}
+
+\vspace{2cm}
+\begin{center}
+\LARGE Cours : \textbf{Introduction aux Séries Temporelles}
+\end{center}
+
+\vspace{2cm}
+\begin{center}
+\LARGE Master 2 Statistique Appliquée aux Vivants
+\end{center}
+
+\vspace{2cm}
+\begin{center}
+\LARGE \textbf{Application des modèles ARIMA et LSTM sous R et Python sur les données  de la production mensuelle d'électricité au USA du 01/1973 à 2005}
+\end{center}
+
+\vspace{2cm}
+\begin{center}
+\LARGE \textbf{Rédigé par :} \\
+\vspace{0,4cm}
+\LARGE AWANDE Carmel \\
+\vspace{0.4cm}
+\LARGE AYONOU Antoine \\
+\vspace{0.4cm}
+\LARGE GANDJI Edmond
+\end{center}
+
+\vspace{2cm}
+\begin{center}
+\textbf{Enseignant: } \\
+\LARGE  \textbf{Dr Nestor BOKOSSA}  
+\end{center}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+# Introduction {.unnumbered}
+
+
+
+Les séries temporelles sont des données qui représentent des observations collectées à des intervalles réguliers dans le temps.
+Elles sont utilisées pour étudier et analyser les tendances, les motifs et les comportements récurrents dans les données temporelles.
+Le processus ARIMA (AutoRegressive Integrated Moving Average) est un modèle statistique couramment utilisé pour analyser et prévoir les séries temporelles.
+Il combine trois composantes principales : l'autorégression (AR), la différenciation (I) et la moyenne mobile (MA).
+L'autorégression examine la relation entre les valeurs passées et la valeur actuelle de la série temporelle, la différenciation est utilisée pour rendre la série temporelle stationnaire en éliminant les tendances, et la moyenne mobile prend en compte les erreurs passées pour prévoir la valeur actuelle.
+Les LSTM (Long Short-Term Memory) sont des réseaux neuronaux récurrents (RNN) particulièrement adaptés à l'analyse des séries temporelles.
+Les LSTM sont capables d'apprendre les dépendances à long terme dans les données, ce qui les rend efficaces pour prédire les valeurs futures des séries temporelles.
+Ils sont couramment utilisés dans des domaines tels que la reconnaissance vocale, le traitement du langage naturel et la prévision des séries temporelles.
+
+Dans le présent travail les modèles ARIMA (sous R) et LSTM (sous python) seront appliqués aux donnée de la production mensuelle d'électricité au USA du 01/1973 à 2005.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Le modèle ARIMA
+
+```{r message=FALSE, warning=FALSE}
+# Chargement des packages
+library(readxl)
+library(tseries)
+library(forecast)
+library(lmtest)
+```
+
+## Visualisation des données
+
+```{r}
+# Imporation de la base
+usElectricity <- read_excel("C:/Users/HP/Downloads/usElectricity.xlsx")
+# Création d'un objet de type série temporelle
+serie <- ts (usElectricity,start=c(1973,1),end=c(2005,12),frequency=12)
+
+
+```
+
+### Visualisation de la série
+
+```{r fig.height=4, fig.width=6}
+
+plot.ts(serie)
+```
+
+La figure présente l'évolution de la production mensuelle d'électricité aux USA.
+
+Après visualisation du graphique, on remarque la production d'électricité varie de 150000 à environ 350000 millions par kW/h sur une période une période de 33 ans.
+
+En examinant le graphique, on peut observer plusieurs tendances.
+Tout d'abord, il y a une augmentation globale de la production d'électricité au fil du temps, ce qui suggère une croissance continue de la demande énergétique aux États-Unis.Il semble y avoir des variations saisonnières dans la production d'électricité et une légère baisse de la production d'électricité au début des années 2000.
+
+### Production moyenne d'électricité
+
+```{r}
+ 
+mean(serie)
+
+```
+
+La production moyenne d'électricté aux USA est 241404.4 millions par kW/h sur une période de 30 ans.
+
+## Décomposition de la série en tendance et saisonnalité
+
+```{r}
+
+dec.m=decompose(serie)
+plot(dec.m)
+
+
+```
+
+La figure montre la décomposition de la série selon une approche additive.
+les différentes composantes de la série.
+Ces composantes sont: la composate aléatoire, la composante saisonière et la tendance.
+En observant la figure on ne voit pas de tendance dans la série on soupçonne plutôt une saisonnalité.
+
+## ACf  et Pacf de la série
+
+```{r fig.height=2.5, fig.width=5}
+
+acf(serie,lag.max = 50)
+pacf(serie)
+```
+
+D'après le graphique de l'ACF (fonction d'autocorrélation), il semble qu'il y ait des corrélations significatives entre les observations et leurs retards.
+Les valeurs de l'ACF dépassent la fourchette de confiance à plusieurs retards, ce qui indique une corrélation statistiquement significative.
+
+D'après le graphique du PACF (Autocorrélation partielle),nous voyons que la majorité des valeurs situées dans la fourchette, nous soupçonnons donc une stationnarité que nous allons confirmer ou infirmer à l'aide des tests de stationnarité.
+
+## Vérification de la stationnarité
+
+Pour tester la stationarité , nous avons utilisé le Test de Dickey-Fuller augmenté et le Test KPSS Hypothèse du test de Dickey-Fuller Augmenté
+
+```{r}
+T=5
+x1=diff(serie,lag=T,difference=1)
+
+acf(x1, lag.max = 50)
+pacf(x1)
+
+```
+
+Lorsqu'on effectue une différiation d'ordre 1, on remarque une nette amélioration au niveau de l'ACF.
+A partir de ce graphique on soupçonne une absence d'autocorrélation que nous allons vérifier à l'aide de test.
+La série différencié d'ordre 1 est pour la suite de nos analyses.
+
+```{r}
+adf=adf.test(x1,alternative = "stationary",k=12)
+print(adf)
+kpss.test(x1)
+
+```
+
+
+
+$$  
+\begin{cases}
+H0:Série \quad non \quad  stationnaire\\
+H1: Série\quad  stationnaire
+\end{cases}
+$$
+
+La p-value associée au Test de Dickey-Fuller augmenté est inférieur à 0.05, donc la série est stationnaire
+
+Hpothèse du Test de KPSS
+
+$$  
+\begin{cases}
+H0:Série \quad  \quad  stationnaire\\
+H1: Série\quad non \quad stationnaire
+\end{cases}
+$$
+
+La p-value associée au test de KPSS est supérieure à 0.05, la série est donc stationnaire.
+
+Les deux test de stationnarité effectuée confirme que la série est stationnaire nous allons passer à la modélisation du processus ARIMA.
+
+## Spécification du modèle ARIMA
+
+```{r}
+
+fit=auto.arima(x1)
+summary(fit)
+
+```
+
+Nous retenons donc ARIMA(2,0,3) comme le meilleur pour la modélisation de nos données(c'est ce modèle qui minimisent l'AIC).
+
+## Prédiction
+
+```{r}
+prediction=forecast(fit,h=50)
+prediction
+plot(prediction)
+```
+
+Nous avons prédits la production d'électricité pour les 50 mois suivants Nous observons une décroissance de la production d'électricité mensuelle au fil des années jusqu'à une stabilisation.
+
+## Validation du modèle
+
+### Autorrécalition
+
+```{r}
+
+
+residu1=residuals(fit)
+
+Box.test(fit$residuals, lag=2, type="Ljung-Box")
+
+
+```
+
+Nous avons test l'hypothèse d'absence d'autocorrélation à l'aide du test de Box-Ljung
+
+$$  
+\begin{cases}
+H0:Absence  \quad  \quad  d'autocorréltion\\
+H1: Présence \quad non \quad d'autocorrélation
+\end{cases}
+$$
+
+La p-value associé au test est supérieure à 0.05 donc l'hypothèse d'absence d'autocorrélation est validée
+
+### Homoscédasticité
+
+```{r}
+
+temps=time(serie)
+bptest(serie~temps)
+
+
+```
+
+Pour tester l'hypothèse d'homoscédasticité nous avons utilisé le test de Breusch Pagan dont les hypothèses sont les suivantes
+
+$$
+\begin{cases}
+Ho : Homoscédasticité \\
+H1: Hétéroscédasticité
+\end{cases}
+$$ 
+
+La p-value associée au test est supérieur à 0.05, il y a donc d'homosédasticté.
+
+# Le modèle LSTM
