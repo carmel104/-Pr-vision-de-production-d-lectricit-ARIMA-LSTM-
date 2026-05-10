@@ -52,3 +52,10 @@ Le modèle Long Short-Term Memory est utilisé pour surpasser les limites des mo
 ---
 
 ## 🚀 Structure du Dépôt
+├── R_Analysis/
+│ └── script_arima.R # Code pour la modélisation ARIMA et tests statistiques
+├── Python_ML/
+│ └── lstm_model.ipynb # Notebook pour le réseau de neurones LSTM
+├── Data/
+│ └── electricity_usa.csv # Dataset source (01/1973 - 12/2005)
+└── README.md
